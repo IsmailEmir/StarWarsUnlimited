@@ -1,0 +1,125 @@
+// Star Wars Unlimited — схема базы данных
+// Спецификация: https://dbml.dbdiagram.io/docs
+// Источник истины: SQL-скрипты генерируются из этого файла
+//   dotnet run --project tools/DbmlToSql
+// Визуализация: https://dbdiagram.io (вставь содержимое этого файла)
+
+Project starwarsunlimited {
+  database_type: 'PostgreSQL'
+  Note: 'База данных настольной карточной игры Star Wars: Unlimited'
+}
+
+Table sets {
+  id integer [primary key, increment]
+  name varchar(120) [not null]
+  code varchar(20) [not null, unique]
+  description text
+  release_date date
+  sort_value integer [not null, default: 0]
+  Note: 'Сет (издание) карт: SOR, SHD, JTL, ...'
+}
+
+Table rarities {
+  id integer [primary key, increment]
+  name varchar(60) [not null, unique]
+  character varchar(10) [not null]
+  color varchar(10)
+  sort_value integer [not null, default: 0]
+  Note: 'Редкость карты: Common, Uncommon, Rare, Legendary, Special'
+}
+
+Table card_types {
+  id integer [primary key, increment]
+  name varchar(60) [not null, unique]
+  value varchar(60) [not null]
+  sort_value integer [not null, default: 0]
+  Note: 'Тип карты: Leader, Unit, Event, Base, Upgrade, Token'
+}
+
+Table aspects {
+  id integer [primary key, increment]
+  name varchar(60) [not null, unique]
+  color varchar(10)
+  description text
+  sort_value integer [not null, default: 0]
+  Note: 'Аспект (цвет) карты: Vigilance, Villainy, Cunning, Heroism, Aggression, Command'
+}
+
+Table traits {
+  id integer [primary key, increment]
+  name varchar(60) [not null, unique]
+  description text
+  Note: 'Трейт (способность/признак) карты: Droid, Sith, Vehicle, ...'
+}
+
+Table cards {
+  id integer [primary key, increment]
+  external_id integer [not null, unique, note: 'Идентификатор карты в API starwarsunlimited.com']
+  title varchar(150) [not null]
+  subtitle varchar(150)
+  card_number integer [not null, note: 'Номер карты внутри сета']
+  card_count integer [note: 'Количество карт в сете']
+  cost integer
+  hp integer
+  power integer
+  text text [note: 'Текст способности карты']
+  artist varchar(120)
+  serial_code varchar(40) [not null, note: 'Серийный номер, например 0101005 или IC27010001']
+  art_url text [note: 'Ссылка на изображение карты']
+  is_unique boolean [not null, default: false]
+  is_foil boolean [not null, default: false]
+  is_hyperspace boolean [not null, default: false]
+  set_id integer [not null]
+  rarity_id integer [not null]
+  type_id integer [not null]
+  created_at timestamp
+  updated_at timestamp
+  Note: 'Основная сущность: карточка'
+}
+
+Table card_aspects {
+  card_id integer [not null, primary key]
+  aspect_id integer [not null, primary key]
+  Note: 'Связь карт и аспектов (многие ко многим)'
+}
+
+Table card_traits {
+  card_id integer [not null, primary key]
+  trait_id integer [not null, primary key]
+  Note: 'Связь карт и трейтов (многие ко многим)'
+}
+
+Table admins {
+  id integer [primary key, increment]
+  username varchar(60) [not null, unique]
+  email varchar(150) [not null, unique]
+  password_hash varchar(200) [not null, note: 'PBKDF2-SHA256, base64']
+  password_salt varchar(100) [not null, note: 'Соль PBKDF2, base64']
+  role varchar(30) [not null, default: 'admin']
+  created_at timestamp
+  last_login_at timestamp
+  Note: 'Администратор сайта'
+}
+
+Table comments {
+  id integer [primary key, increment]
+  card_id integer [not null]
+  author varchar(80) [not null]
+  body text [not null]
+  created_at timestamp
+  Note: 'Комментарий пользователя к карточке'
+}
+
+// Связи: cards -> справочники (многие к одному)
+Ref: cards.set_id > sets.id
+Ref: cards.rarity_id > rarities.id
+Ref: cards.type_id > card_types.id
+
+// Связи: cards -> aspects / traits (многие ко многим)
+Ref: card_aspects.card_id > cards.id [delete: cascade]
+Ref: card_aspects.aspect_id > aspects.id [delete: cascade]
+Ref: card_traits.card_id > cards.id [delete: cascade]
+Ref: card_traits.trait_id > traits.id [delete: cascade]
+
+// Связь comments -> cards
+Ref: comments.card_id > cards.id [delete: cascade]

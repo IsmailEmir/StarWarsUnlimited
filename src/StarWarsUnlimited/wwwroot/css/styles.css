@@ -1,0 +1,25 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --background-color: #0a0a0a;
+    --font-color: #fff;
+    --default-width: 1248px;
+    --spacing: 0.25rem;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--font-color)
+}
+
+/* HEADER */
+.header-container {
+    width: 100%;
+    max-width: var(--default-width);
+    padding-top: calc(var(--spacing)*6);
+    padding-bottom: calc(var(--spacing)*6);
+}
